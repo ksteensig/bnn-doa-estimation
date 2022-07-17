@@ -12,4 +12,4 @@ Experimenting with Binarized Neural Networks for DoA estimation on 1-bit quantiz
 - [ ] Train DNN and BNN on the same data
 - [ ] If possible, acquire FPGA powerful enough to run BNN
   - [ ] Implement BNN in a hardware description language and synthesize for aforementioned FPGA
-- Clean up
+- [ ] Clean up
