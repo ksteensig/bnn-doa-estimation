@@ -1,4 +1,7 @@
 # bnn-doa-estimation
+
+Binarized Neural Network DoA estimation.
+
 Experimenting with Binarized Neural Networks for DoA estimation on 1-bit quantized signals. The benefit is that 1-bit ADCs are much simpler which is key in the case of massive MIMO systems. Enabling the use of thousands of receivers can give a much higher spatial resolution which is a corner stone in improving future wireless communication performance.
 
 The purpose is to determine how 1-bit quantization of a received signal on a ULA performs compared to the unquantized during DoA estimation. The evidence shown by (One-bit MUSIC https://arxiv.org/pdf/1901.05109.pdf) suggests similar performance whether or not the signal has been quantized.
