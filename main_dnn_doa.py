@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
-from binarized_modules import BinarizeLinear
 
 # Training settings
 parser = argparse.ArgumentParser(
@@ -99,14 +98,14 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.infl_ratio = 3
-        self.fc1 = BinarizeLinear(2*1024, 2048 * self.infl_ratio)
+        self.fc1 = nn.Linear(2*1024, 2048 * self.infl_ratio)
         self.htanh1 = nn.Hardtanh()
         self.bn1 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc2 = BinarizeLinear(
+        self.fc2 = nn.Linear(
             2048 * self.infl_ratio, 2048 * self.infl_ratio)
         self.htanh2 = nn.Hardtanh()
         self.bn2 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc3 = BinarizeLinear(
+        self.fc3 = nn.Linear(
             2048 * self.infl_ratio, 2048 * self.infl_ratio)
         self.htanh3 = nn.Hardtanh()
         self.bn3 = nn.BatchNorm1d(2048 * self.infl_ratio)
@@ -147,10 +146,7 @@ def train(epoch):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
         optimizer.zero_grad()
-
-        bin_data = torch.sign(data)
-
-        output = model(bin_data)
+        output = model(data)
         loss = criterion(output, target)
 
         if epoch % 40 == 0:
