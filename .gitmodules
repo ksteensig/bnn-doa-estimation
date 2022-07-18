@@ -1,3 +1,3 @@
-[submodule "BinaryNet.pytorch"]
-	path = BinaryNet.pytorch
-	url = git@github.com:ksteensig/BinaryNet.pytorch.git
+[submodule "BinaryNet"]
+	path = BinaryNet
+	url = git@github.com:ksteensig/BinaryNet.git
