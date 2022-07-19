@@ -7,15 +7,8 @@ def array_response_vector(array, theta):
     return v / np.sqrt(N)
 
 
-L = 1  # number of sources
-N = 1024  # number of ULA elements
-snr = 1000  # signal to noise ratio
-numrealization = 1  # number of realizations
-
-array = np.linspace(0, (N - 1) / 2, N)
-
-
 def generate_single_data(L, N, snr, numrealization):
+    array = np.linspace(0, (N - 1) / 2, N)
     Thetas = np.pi * (np.random.rand(L) - 1 / 2)  # random source directions
     Alphas = np.random.randn(L) + np.random.randn(L) * \
         1j  # random source powers
@@ -60,16 +53,3 @@ def generate_all_data(L, N, snr, numrealization, datapoints):
     with open("signal.npy", "wb") as signal, open("label.npy", "wb") as label:
         np.save(signal, Hout)
         np.save(label, Thetaout)
-
-
-generate_all_data(L, N, snr, numrealization, int(1e6))
-
-
-with open("signal.npy", "rb") as f:
-    a = np.load(f)
-    print(a.shape)
-
-
-with open("label.npy", "rb") as f:
-    a = np.load(f)
-    print(a.shape)
