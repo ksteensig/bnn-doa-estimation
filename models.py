@@ -3,21 +3,19 @@ from BinaryNet.models.binarized_modules import BinarizeLinear
 
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, output_size):
         super(Net, self).__init__()
         self.infl_ratio = 3
-        self.fc1 = nn.Linear(2*1024, 2048 * self.infl_ratio)
+        self.fc1 = nn.Linear(input_size, 2048 * self.infl_ratio)
         self.htanh1 = nn.Hardtanh()
         self.bn1 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc2 = nn.Linear(
-            2048 * self.infl_ratio, 2048 * self.infl_ratio)
+        self.fc2 = nn.Linear(2048 * self.infl_ratio, 2048 * self.infl_ratio)
         self.htanh2 = nn.Hardtanh()
         self.bn2 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc3 = nn.Linear(
-            2048 * self.infl_ratio, 2048 * self.infl_ratio)
+        self.fc3 = nn.Linear(2048 * self.infl_ratio, 2048 * self.infl_ratio)
         self.htanh3 = nn.Hardtanh()
         self.bn3 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc4 = nn.Linear(2048 * self.infl_ratio, 90)
+        self.fc4 = nn.Linear(2048 * self.infl_ratio, output_size)
         self.logsoftmax = nn.LogSoftmax()
         self.drop = nn.Dropout(0.5)
 
@@ -38,21 +36,19 @@ class Net(nn.Module):
 
 
 class BinaryNet(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, output_size):
         super(Net, self).__init__()
         self.infl_ratio = 3
-        self.fc1 = BinarizeLinear(2*1024, 2048 * self.infl_ratio)
+        self.fc1 = BinarizeLinear(input_size, 2048 * self.infl_ratio)
         self.htanh1 = nn.Hardtanh()
         self.bn1 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc2 = BinarizeLinear(
-            2048 * self.infl_ratio, 2048 * self.infl_ratio)
+        self.fc2 = BinarizeLinear(2048 * self.infl_ratio, 2048 * self.infl_ratio)
         self.htanh2 = nn.Hardtanh()
         self.bn2 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc3 = BinarizeLinear(
-            2048 * self.infl_ratio, 2048 * self.infl_ratio)
+        self.fc3 = BinarizeLinear(2048 * self.infl_ratio, 2048 * self.infl_ratio)
         self.htanh3 = nn.Hardtanh()
         self.bn3 = nn.BatchNorm1d(2048 * self.infl_ratio)
-        self.fc4 = nn.Linear(2048 * self.infl_ratio, 90)
+        self.fc4 = nn.Linear(2048 * self.infl_ratio, output_size)
         self.logsoftmax = nn.LogSoftmax()
         self.drop = nn.Dropout(0.5)
 

@@ -11,15 +11,21 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
 from models import Net, BinaryNet
+from pathlib import Path
 
 # Training settings
-parser = argparse.ArgumentParser(
-    description="First binarized DoA estimation example")
+parser = argparse.ArgumentParser(description="First binarized DoA estimation example")
 parser.add_argument(
-    "--bnn", action="store_true", default=False, help="Train BNN instead of DNN (default: False)"
+    "--bnn",
+    action="store_true",
+    default=False,
+    help="Train BNN instead of DNN (default: False)",
 )
 parser.add_argument(
-    "--generate-data", action="store_true", default=False, help="Generate data (default: False)"
+    "--generate-data",
+    action="store_true",
+    default=False,
+    help="Generate data (default: False)",
 )
 parser.add_argument(
     "--batch-size",
@@ -27,13 +33,6 @@ parser.add_argument(
     default=512,
     metavar="N",
     help="input batch size for training (default: 512)",
-)
-parser.add_argument(
-    "--data-size",
-    type=int,
-    default=1000000,
-    metavar="N",
-    help="data size in samples (default: 1e6)",
 )
 parser.add_argument(
     "--train-test-ratio",
@@ -77,89 +76,15 @@ parser.add_argument(
     help="how many batches to wait before logging training status",
 )
 parser.add_argument(
-    "--sources",
-    type=int,
-    default=1,
+    "--data-uuid",
+    type=str,
+    default="",
     metavar="N",
-    help="Number of sources (default: 1)",
-)
-parser.add_argument(
-    "--realizations",
-    type=int,
-    default=1,
-    metavar="N",
-    help="Number of realizations (default: 1)",
-)
-parser.add_argument(
-    "--array-elements",
-    type=int,
-    default=1024,
-    metavar="N",
-    help="Array elements (default: 1024)",
-)
-parser.add_argument(
-    "--snr",
-    type=int,
-    default=1000,
-    metavar="N",
-    help="Signal to noise ratio (default: 1000)",
-)
-args = parser.parse_args()
-args.cuda = not args.no_cuda and torch.cuda.is_available()
-
-torch.manual_seed(args.seed)
-if args.cuda:
-    torch.cuda.manual_seed(args.seed)
-
-train_size = int(args.data_size * args.train_test_ratio)
-test_size = int(args.data_size - train_size)
-
-if args.generate_data:
-    from data_generation import generate_all_data
-    # L, N, SNR, numrealization, data_size
-    generate_all_data(args.sources, args.array_elements,
-                      args.snr, args.realizations, args.data_size)
-
-with open("signal.npy", "rb") as f:
-    data = np.load(f)
-
-with open("label.npy", "rb") as f:
-    label = np.load(f)
-
-data = torch.Tensor(data)
-label = torch.Tensor(label).to(torch.long)
-
-train_dataset = TensorDataset(
-    data[:train_size], label[:train_size])  # create your datset
-test_dataset = TensorDataset(
-    data[train_size:], label[train_size:])  # create your datset
-
-#kwargs = {"num_workers": 1, "pin_memory": True} if args.cuda else {}
-
-train_loader = torch.utils.data.DataLoader(
-    train_dataset, batch_size=args.batch_size, shuffle=True
-)
-test_loader = torch.utils.data.DataLoader(
-    test_dataset, batch_size=test_size, shuffle=True
+    help="data UUID",
 )
 
-model = None
 
-if args.bnn:
-    model = BinaryNet()
-else:
-    model = Net()
-
-if args.cuda:
-    torch.cuda.set_device(0)
-    model.cuda()
-
-
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
-
-
-def train(epoch):
+def train(model, args, train_loader, optimizer, criterion, epoch):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         if args.cuda:
@@ -200,14 +125,17 @@ def train(epoch):
 
 
 def save_checkpoint(model, optimizer, save_path, epoch):
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'epoch': epoch
-    }, save_path)
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "epoch": epoch,
+        },
+        save_path,
+    )
 
 
-def test(epoch, path):
+def test(model, args, test_loader, optimizer, criterion, epoch, path):
     model.eval()
     test_loss = 0
     correct = 0
@@ -238,27 +166,85 @@ def test(epoch, path):
         )
     )
 
-    save_checkpoint(model, optimizer,
-                    f'{path}/model_{epoch=}', epoch)
+    save_checkpoint(model, optimizer, f"{path}/model_{epoch=}", epoch)
 
     return test_loss, 100.0 * correct / len(test_loader.dataset)
 
 
 def main():
+    args = parser.parse_args()
+
     name = uuid.uuid4().hex
-    now = datetime.now()
 
-    path = f'{now}_{name}'
+    Path("training").mkdir(parents=True, exist_ok=True)
 
-    os.mkdir(f'{path}')
-    with open(f'{path}/history.txt', 'w') as history, open('arguments.json', 'w') as args_json:
-        history.write("epoch, loss, accuracy")
+    path = f"training/{name}"
+    os.mkdir(path)
+
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
+
+    torch.manual_seed(args.seed)
+    if args.cuda:
+        torch.cuda.manual_seed(args.seed)
+
+    with open(f"data/{args.data_uuid}/signal.npy", "rb") as f:
+        data = np.load(f)
+
+    with open(f"data/{args.data_uuid}/label.npy", "rb") as f:
+        label = np.load(f)
+
+    with open(f"data/{args.data_uuid}/arguments.json", "r") as f:
+        data_args = json.loads(f.read())
+
+        # 2x array elements because of real and imag component
+        input_size = 2 * data_args["array_elements"]
+        output_size = data_args["angular_bins"]
+        data_size = data_args["data_size"]
+
+    data = torch.Tensor(data)
+    label = torch.Tensor(label).to(torch.long)
+
+    train_size = int(data_size * args.train_test_ratio)
+    test_size = int(data_size - train_size)
+
+    train_dataset = TensorDataset(data[:train_size], label[:train_size])
+    test_dataset = TensorDataset(data[train_size:], label[train_size:])
+
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=True
+    )
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=test_size, shuffle=True
+    )
+
+    model = None
+
+    if args.bnn:
+        model = BinaryNet(input_size, output_size)
+    else:
+        model = Net(input_size, output_size)
+
+    if args.cuda:
+        torch.cuda.set_device(0)
+        model.cuda()
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+    with open(f"{path}/arguments.json", "w") as args_json:
         json.dump(args.__dict__, args_json, indent=2)
 
+    with open(f"{path}/test_history.csv", "w") as history:
+        history.write("epoch, loss, accuracy")
         for epoch in range(1, args.epochs + 1):
-            train(epoch)
-            loss, accuracy = test(epoch, path)
+            train(model, args, train_loader, optimizer, criterion, epoch)
+
+            loss, accuracy = test(
+                model, args, test_loader, optimizer, criterion, epoch, path
+            )
+
             history.write(f"{epoch}, {loss}, {accuracy}")
+            os.fsync()
             # if epoch % 40 == 0:
             #    optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
 
