@@ -166,7 +166,7 @@ def test(model, args, test_loader, optimizer, criterion, epoch, path):
         )
     )
 
-    save_checkpoint(model, optimizer, f"{path}/model_{epoch=}", epoch)
+    save_checkpoint(model, optimizer, f"{path}/model_{epoch}", epoch)
 
     return test_loss, 100.0 * correct / len(test_loader.dataset)
 
@@ -244,7 +244,7 @@ def main():
             )
 
             history.write(f"{epoch}, {loss}, {accuracy}")
-            os.fsync()
+            os.fsync(history)
             # if epoch % 40 == 0:
             #    optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
 

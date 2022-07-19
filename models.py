@@ -37,7 +37,7 @@ class Net(nn.Module):
 
 class BinaryNet(nn.Module):
     def __init__(self, input_size, output_size):
-        super(Net, self).__init__()
+        super(BinaryNet, self).__init__()
         self.infl_ratio = 3
         self.fc1 = BinarizeLinear(input_size, 2048 * self.infl_ratio)
         self.htanh1 = nn.Hardtanh()
