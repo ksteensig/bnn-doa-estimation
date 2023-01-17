@@ -6,6 +6,11 @@ The purpose is to determine how 1-bit quantization of a received signal on a ULA
 
 In case the BNN is not particularly worse than the DNN, it would be of interest to create a bitwise neural network using XNOR and popcount during inference. The only available FPGA I have is an iCE40 HX8k so a more powerful one is required if this is to be done.
 
+# Training
+
+1. Generate data using data_generation.py (parameters for the data is described in code): `python data_generation.py`
+2. Train using main.py on the generated data: `python main.py --data-uuid <uuid>` (<uuid> is the name of the data in the data folder)
+
 # TODO
 - [x] Implement data generation (room for improvement)
 - [x] Define simple DNN and BNN
